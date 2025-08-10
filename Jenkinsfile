@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER = 'your-dockerhub-username'
+        DOCKERHUB_USER = 'sanjaykshebbar'
         DOCKERHUB_PASS = credentials('dockerhub-credentials-id') // from Jenkins credentials
         IMAGE_NAME = 'sanjaykshebbar/little-geeky'
         IMAGE_TAG = 'latest'

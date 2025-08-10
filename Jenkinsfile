@@ -70,29 +70,28 @@ pipeline {
             }
         }
 
-        stage('Deploy to Remote Server') {
+        stage('Build & Push (Multi-arch)') {
             steps {
-                sshagent(['jenkins-ssh-credentials-id']) {
-                    sh """
-                        ssh -T -o StrictHostKeyChecking=no ${REMOTE_HOST} /bin/bash -lc '
-                        set -euo pipefail
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    script {
+                        sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
 
-                        # Optional: ensure Docker is accessible and running
-                        docker --version
-                        systemctl is-active docker >/dev/null 2>&1 || sudo systemctl start docker
+                            // Ensure buildx is available and selected
+                            sh '''
+                            docker buildx create --use --name littlegeekybuilder || docker buildx use littlegeekybuilder
+                            docker buildx inspect --bootstrap
+                            '''
 
-                        # Avoid stale/invalid tokens interfering with public pulls
-                        docker logout || true
-
-                        # Pull the exact versioned tag built in this pipeline
-                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
-
-                        # Restart the container with the new image
-                        docker stop little-geeky || true
-                        docker rm little-geeky || true
-                        docker run -d --name little-geeky -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}
-                        '
-                    """
+                            // Build and push multi-arch image with both tags
+                            sh """
+                            docker buildx build \
+                            --platform linux/amd64,linux/arm64 \
+                            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                            -t ${IMAGE_NAME}:latest \
+                            --push \
+                            .
+                             """
+                    }
                 }
             }
         }

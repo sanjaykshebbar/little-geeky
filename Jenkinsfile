@@ -70,30 +70,24 @@ pipeline {
             }
         }
 
-        stage('Build & Push (Multi-arch)') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
-                    script {
-                        sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
-
-                            // Ensure buildx is available and selected
-                            sh '''
-                            docker buildx create --use --name littlegeekybuilder || docker buildx use littlegeekybuilder
-                            docker buildx inspect --bootstrap
-                            '''
-
-                            // Build and push multi-arch image with both tags
-                            sh """
-                            docker buildx build \
-                            --platform linux/amd64,linux/arm64 \
-                            -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                            -t ${IMAGE_NAME}:latest \
-                            --push \
-                            .
-                             """
-                    }
-                }
-            }
-        }
+        stage('Build & Push (ARM64 only)') {
+  steps {
+    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+      script {
+        sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
+        sh """
+          docker buildx create --use --name littlegeekybuilder || docker buildx use littlegeekybuilder
+          docker buildx inspect --bootstrap
+          docker buildx build \
+            --platform linux/arm64 \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+            -t ${IMAGE_NAME}:latest \
+            --push \
+            .
+        """
+      }
+    }
+  }
+}
     }
 }

@@ -45,13 +45,13 @@ pipeline {
 
         stage('Deploy to Remote Server') {
             steps {
-                script {
+                sshagent(['jenkins-ssh-credentials-id']) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_HOST} '
-                            docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
-                            docker stop little-geeky || true &&
-                            docker rm little-geeky || true &&
-                            docker run -d --name little-geeky -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}
+                        ssh -o StrictHostKeyChecking=no sanjay.ks@192.168.68.101 '
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
+                        docker stop little-geeky || true &&
+                        docker rm little-geeky || true &&
+                        docker run -d --name little-geeky -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}
                         '
                     """
                 }

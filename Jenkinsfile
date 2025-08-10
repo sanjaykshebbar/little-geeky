@@ -74,10 +74,22 @@ pipeline {
             steps {
                 sshagent(['jenkins-ssh-credentials-id']) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_HOST} '
-                        docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
-                        docker stop little-geeky || true &&
-                        docker rm little-geeky || true &&
+                        ssh -T -o StrictHostKeyChecking=no ${REMOTE_HOST} /bin/bash -lc '
+                        set -euo pipefail
+
+                        # Optional: ensure Docker is accessible and running
+                        docker --version
+                        systemctl is-active docker >/dev/null 2>&1 || sudo systemctl start docker
+
+                        # Avoid stale/invalid tokens interfering with public pulls
+                        docker logout || true
+
+                        # Pull the exact versioned tag built in this pipeline
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+
+                        # Restart the container with the new image
+                        docker stop little-geeky || true
+                        docker rm little-geeky || true
                         docker run -d --name little-geeky -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}
                         '
                     """

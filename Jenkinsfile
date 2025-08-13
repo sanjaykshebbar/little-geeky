@@ -66,40 +66,41 @@ pipeline {
         }
 
         stage('Deploy to Linux server') {
-            steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'jenkins-ssh-credentials-id',
-                    keyFileVariable: 'SSH_KEY',
-                    usernameVariable: 'SSH_USER'
-                )]) {
-                    sh(
-                        'ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ' +
-                        SSH_USER + '@192.168.68.104 /bin/bash -lc ' +
-                        "'set -euo pipefail\n" +
+    steps {
+        withCredentials([sshUserPrivateKey(
+            credentialsId: 'jenkins-ssh-credentials-id',
+            keyFileVariable: 'SSH_KEY',
+            usernameVariable: 'SSH_USER'
+        )]) {
+            sh(
+                'ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ' +
+                SSH_USER + '@192.168.68.104 /bin/bash -lc ' +
+                "'set -euo pipefail\n" +
 
-                        "# Pull the correct multi-arch image\n" +
-                        "docker pull " + IMAGE_NAME + ":" + IMAGE_TAG + "\n" +
+                "# Pull the correct multi-arch image\n" +
+                "docker pull ${IMAGE_NAME}:${IMAGE_TAG}\n" +
 
-                        "# Restart container with new image\n" +
-                        "docker stop little-geeky || true\n" +
-                        "docker rm little-geeky || true\n" +
-                        "docker run -d --name little-geeky -p 8081:80 " + IMAGE_NAME + ":" + IMAGE_TAG + "\n" +
+                "# Restart container with new image\n" +
+                "docker stop little-geeky || true\n" +
+                "docker rm little-geeky || true\n" +
+                "docker run -d --name little-geeky -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}\n" +
 
-                        "# Health check\n" +
-                        "sleep 3\n" +
-                        "if [ \"$(docker inspect -f '{{.State.Running}}' little-geeky || echo false)\" != \"true\" ]; then\n" +
-                        "  echo 'Container exited — dumping logs:' >&2\n" +
-                        "  docker logs little-geeky || true\n" +
-                        "  exit 1\n" +
-                        "fi\n" +
+                "# Health check\n" +
+                "sleep 3\n" +
+                "if [ \"\$(docker inspect -f '{{.State.Running}}' little-geeky || echo false)\" != \"true\" ]; then\n" +
+                "  echo 'Container exited — dumping logs:' >&2\n" +
+                "  docker logs little-geeky || true\n" +
+                "  exit 1\n" +
+                "fi\n" +
 
-                        "# Show deployment URL\n" +
-                        "IP=$(hostname -I | awk \"{print \\\$1}\")\n" +
-                        "echo \"Deployed and running on http://$IP:8081\"\n" +
-                        "'"
-                    )
-                }
-            }
+                "# Show deployment URL\n" +
+                "IP=\$(hostname -I | awk '{print \$1}')\n" +
+                "echo \"Deployed and running on http://\$IP:8081\"\n" +
+                "'"
+            )
         }
+    }
+}
+
     }
 }

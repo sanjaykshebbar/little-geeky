@@ -66,12 +66,12 @@ pipeline {
             }
         }
 
-        stage('Deploy to Raspberry Pi') {
+        stage('Deploy to Linux server') {
             steps {
                 // Using direct -i key avoids ssh-agent key format issues
                 withCredentials([sshUserPrivateKey(credentialsId: 'jenkins-ssh-credentials-id', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
                     sh """
-                      ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ${SSH_USER}@192.168.68.101 /bin/bash -lc '
+                      ssh -i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ${SSH_USER}@192.168.68.104 /bin/bash -lc '
                         set -euo pipefail
 
                         # Pull the correct platform variant automatically from the multi-arch tag
